@@ -31,6 +31,10 @@ build:bazel-remote --remote_upload_local_results=true
 # BuildBuddy remote cache (free tier) — API key goes in user.bazelrc (gitignored)
 build:buildbuddy-cache --remote_cache=grpcs://remote.buildbuddy.io
 build:buildbuddy-cache --remote_upload_local_results=true
+# BES (Build Event Service) streams build results to the BuildBuddy UI.
+# Without these two flags, caching works but the dashboard shows nothing.
+build:buildbuddy-cache --bes_backend=grpcs://remote.buildbuddy.io
+build:buildbuddy-cache --bes_results_url=https://app.buildbuddy.io/invocation/
 
 # BuildBuddy RBE — executes actions on remote workers, not just caches them
 build:buildbuddy-rbe --config=buildbuddy-cache
