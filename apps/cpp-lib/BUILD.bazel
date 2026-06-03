@@ -5,6 +5,7 @@ cc_library(
     srcs = ["greeter.cc"],
     hdrs = ["greeter.h"],
     visibility = ["//visibility:public"],
+    deps = ["//libs/common:version"],
 )
 
 # shard_count splits the test across N independent shards in CI.

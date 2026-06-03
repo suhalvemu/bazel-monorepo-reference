@@ -5,12 +5,14 @@ namespace example {
 
 TEST(GreeterTest, GreetsWithName) {
     Greeter g("Bazel");
-    EXPECT_EQ(g.Greet(), "Hello from C++, Bazel!");
+    // Greeting embeds build info from //libs/common:version (shared library dep).
+    // Use find() to check the prefix without hard-coding the full version string.
+    EXPECT_NE(g.Greet().find("Hello from C++, Bazel!"), std::string::npos);
 }
 
 TEST(GreeterTest, GreetsWorld) {
     Greeter g("World");
-    EXPECT_EQ(g.Greet(), "Hello from C++, World!");
+    EXPECT_NE(g.Greet().find("Hello from C++, World!"), std::string::npos);
 }
 
 }  // namespace example
