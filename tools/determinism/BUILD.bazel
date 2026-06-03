@@ -1,0 +1,21 @@
+load("@rules_python//python:defs.bzl", "py_binary")
+
+py_binary(
+    name = "static_check",
+    srcs = ["static_check.py"],
+    main = "static_check.py",
+    visibility = ["//visibility:public"],
+)
+
+py_binary(
+    name = "summarize",
+    srcs = ["summarize.py"],
+    main = "summarize.py",
+    visibility = ["//visibility:public"],
+)
+
+exports_files([
+    "dynamic_check.sh",
+    "static_check.py",
+    "summarize.py",
+])

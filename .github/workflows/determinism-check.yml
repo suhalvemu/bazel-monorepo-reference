@@ -1,0 +1,172 @@
+name: Determinism Check
+
+on:
+  pull_request:
+    paths:
+      # Only run when BUILD files, source files, or bazelrc change
+      - '**BUILD.bazel'
+      - '**BUILD'
+      - '**/*.bzl'
+      - '**/*.go'
+      - '**/*.cc'
+      - '**/*.cpp'
+      - '**/*.c'
+      - '**/*.h'
+      - '**/*.java'
+      - '**/*.py'
+      - '**/*.ts'
+      - '.bazelrc'
+      - 'MODULE.bazel'
+
+jobs:
+  determinism-check:
+    name: Determinism Check
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write   # needed to post PR comments
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history for git diff
+
+      - name: Set up Bazel
+        uses: bazel-contrib/setup-bazel@0.8.5
+        with:
+          bazelisk-cache: true
+          repository-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # ── Step 1: Find changed files ─────────────────────────────────────
+      - name: Find changed files
+        id: changed
+        run: |
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+
+          # All changed files
+          CHANGED_FILES=$(git diff --name-only "$BASE"..."$HEAD" 2>/dev/null || \
+                          git diff --name-only HEAD~1 HEAD)
+          echo "$CHANGED_FILES" > /tmp/changed_files.txt
+          echo "Changed files:"
+          cat /tmp/changed_files.txt
+
+          # Changed packages (directories containing BUILD files)
+          CHANGED_PKGS=$(echo "$CHANGED_FILES" | \
+            xargs -I{} dirname {} | sort -u | \
+            while read pkg; do
+              [[ -f "$pkg/BUILD.bazel" || -f "$pkg/BUILD" ]] && echo "//$pkg:all"
+            done | head -20)
+          echo "$CHANGED_PKGS" > /tmp/changed_targets.txt
+          echo "Changed targets:"
+          cat /tmp/changed_targets.txt
+
+          # Count for summary
+          echo "file_count=$(wc -l < /tmp/changed_files.txt)" >> "$GITHUB_OUTPUT"
+          echo "target_count=$(wc -l < /tmp/changed_targets.txt)" >> "$GITHUB_OUTPUT"
+
+      # ── Step 2: Static Analysis ────────────────────────────────────────
+      - name: Static analysis — scan for non-deterministic patterns
+        id: static
+        run: |
+          cat /tmp/changed_files.txt | \
+            python3 tools/determinism/static_check.py --stdin \
+            > /tmp/static_report.json
+
+          echo "Static report:"
+          cat /tmp/static_report.json | python3 -m json.tool
+
+          HIGH=$(python3 -c "import json; r=json.load(open('/tmp/static_report.json')); print(r.get('summary',{}).get('HIGH',0))")
+          echo "high_count=$HIGH" >> "$GITHUB_OUTPUT"
+
+      # ── Step 3: Dynamic Analysis ───────────────────────────────────────
+      - name: Dynamic analysis — build twice, compare output hashes
+        id: dynamic
+        if: steps.changed.outputs.target_count != '0'
+        run: |
+          chmod +x tools/determinism/dynamic_check.sh
+          TARGET_LIST=$(cat /tmp/changed_targets.txt | tr '\n' ' ')
+
+          if [[ -z "${TARGET_LIST// }" ]]; then
+            echo '{"deterministic":true,"targets_checked":[],"differing_output_files":[],"run1_output_files_hashed":0,"run2_cache_hits_against_run1":0,"error":null}' \
+              > /tmp/dynamic_report.json
+          else
+            ./tools/determinism/dynamic_check.sh $TARGET_LIST \
+              > /tmp/dynamic_report.json 2>/tmp/dynamic_stderr.txt || true
+          fi
+
+          echo "Dynamic report:"
+          cat /tmp/dynamic_report.json | python3 -m json.tool
+
+          DETERMINISTIC=$(python3 -c "import json; r=json.load(open('/tmp/dynamic_report.json')); print(str(r.get('deterministic',True)).lower())")
+          echo "deterministic=$DETERMINISTIC" >> "$GITHUB_OUTPUT"
+        env:
+          BUILDBUDDY_API_KEY: ${{ secrets.BUILDBUDDY_API_KEY }}
+
+      # ── Step 4: Generate PR comment ────────────────────────────────────
+      - name: Generate PR comment
+        id: comment
+        run: |
+          # Ensure dynamic report exists even if step was skipped
+          if [[ ! -f /tmp/dynamic_report.json ]]; then
+            echo '{"deterministic":true,"targets_checked":[],"differing_output_files":[],"error":"skipped — no changed targets"}' \
+              > /tmp/dynamic_report.json
+          fi
+
+          python3 tools/determinism/summarize.py \
+            --static  /tmp/static_report.json \
+            --dynamic /tmp/dynamic_report.json \
+            --pr-number "${{ github.event.pull_request.number }}" \
+            --commit   "${{ github.event.pull_request.head.sha }}" \
+            > /tmp/pr_comment.md
+
+          echo "PR comment:"
+          cat /tmp/pr_comment.md
+
+      # ── Step 5: Post PR comment ────────────────────────────────────────
+      - name: Post PR comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('/tmp/pr_comment.md', 'utf8');
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+
+            // Delete previous determinism check comment if exists
+            const comments = await github.rest.issues.listComments({ owner, repo, issue_number });
+            for (const c of comments.data) {
+              if (c.user.type === 'Bot' && c.body.includes('Determinism Check')) {
+                await github.rest.issues.deleteComment({ owner, repo, comment_id: c.id });
+              }
+            }
+
+            // Post fresh comment
+            await github.rest.issues.createComment({ owner, repo, issue_number, body });
+
+      # ── Step 6: Fail if HIGH risk static findings or non-deterministic outputs
+      - name: Enforce determinism gate
+        run: |
+          HIGH="${{ steps.static.outputs.high_count }}"
+          DETERMINISTIC="${{ steps.dynamic.outputs.deterministic }}"
+
+          if [[ "$HIGH" -gt 0 ]]; then
+            echo "❌ FAILED: Static analysis found $HIGH HIGH risk pattern(s)."
+            echo "   These patterns are known to cause cache misses on every run."
+            echo "   Fix the patterns listed in the PR comment before merging."
+            exit 1
+          fi
+
+          if [[ "$DETERMINISTIC" == "false" ]]; then
+            echo "❌ FAILED: Dynamic check detected non-deterministic build outputs."
+            echo "   Two clean builds produced different output hashes."
+            echo "   Check the PR comment for the specific targets and files."
+            exit 1
+          fi
+
+          echo "✅ PASSED: No HIGH risk patterns found, all outputs are deterministic."
