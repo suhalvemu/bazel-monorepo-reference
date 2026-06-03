@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package greeter;
 
-option go_package = "github.com/suhalvemu/bazel-cache-rbe-examples/proto;proto";
+option go_package = "github.com/suhalvemu/bazel-monorepo-reference/proto;proto";
 option java_package = "com.example.proto";
 option java_outer_classname = "GreeterProto";
 

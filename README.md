@@ -134,4 +134,4 @@ Built by **Suhal Vemu** — Senior Software Engineer specialising in Bazel, buil
 - LinkedIn: [linkedin.com/in/suhalvemu](https://www.linkedin.com/in/suhalvemu)
 - Email: vemusuhal@gmail.com
 
-Questions, issues, or want to discuss Bazel at scale? Open an [issue](https://github.com/suhalvemu/bazel-cache-rbe-examples/issues) or reach out directly — always happy to talk build systems.
+Questions, issues, or want to discuss Bazel at scale? Open an [issue](https://github.com/suhalvemu/bazel-monorepo-reference/issues) or reach out directly — always happy to talk build systems.

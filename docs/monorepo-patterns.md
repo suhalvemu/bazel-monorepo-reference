@@ -68,7 +68,7 @@ Custom rules give full control over what Bazel does. See `bazel/rules.bzl`:
 generate_header(
     name = "project_header",
     out = "project.h",
-    project_name = "bazel-cache-rbe-examples",
+    project_name = "bazel-monorepo-reference",
     version = "1.0.0",
 )
 ```

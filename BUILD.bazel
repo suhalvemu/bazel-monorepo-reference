@@ -1,6 +1,6 @@
 load("@gazelle//:def.bzl", "gazelle")
 
-# gazelle:prefix github.com/suhalvemu/bazel-cache-rbe-examples
+# gazelle:prefix github.com/suhalvemu/bazel-monorepo-reference
 #
 # Run `bazel run //:gazelle` to auto-generate/update Go BUILD files.
 # Run `bazel run //:gazelle -- -mode=diff` to preview changes without applying them.

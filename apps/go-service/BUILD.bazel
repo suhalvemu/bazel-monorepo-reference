@@ -5,7 +5,7 @@ load("@rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
 go_library(
     name = "go-service-lib",
     srcs = ["main.go"],
-    importpath = "github.com/suhalvemu/bazel-cache-rbe-examples/apps/go-service",
+    importpath = "github.com/suhalvemu/bazel-monorepo-reference/apps/go-service",
     visibility = ["//visibility:private"],
 )
 

@@ -1,3 +1,3 @@
-module github.com/suhalvemu/bazel-cache-rbe-examples
+module github.com/suhalvemu/bazel-monorepo-reference
 
 go 1.23
