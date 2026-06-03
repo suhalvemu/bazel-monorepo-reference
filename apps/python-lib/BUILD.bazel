@@ -2,12 +2,16 @@ load("@rules_python//python:defs.bzl", "py_library", "py_test")
 
 py_library(
     name = "python-lib",
-    srcs = ["lib.py"],
+    srcs = ["greeter.py"],
+    # imports = ["."] adds this package's directory to PYTHONPATH in the sandbox,
+    # enabling `import greeter` instead of `import apps.python_lib.greeter`.
+    imports = ["."],
     visibility = ["//visibility:public"],
 )
 
 py_test(
     name = "python-lib-test",
-    srcs = ["lib_test.py"],
+    srcs = ["greeter_test.py"],
+    main = "greeter_test.py",
     deps = [":python-lib"],
 )

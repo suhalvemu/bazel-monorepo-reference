@@ -1,0 +1,6 @@
+# Google Cloud Storage remote cache.
+# Requires: gcloud auth application-default login
+# Set GCS_BUCKET env var to your bucket name.
+build:gcs --remote_cache=https://storage.googleapis.com/${GCS_BUCKET}
+build:gcs --google_default_credentials
+build:gcs --remote_upload_local_results=true

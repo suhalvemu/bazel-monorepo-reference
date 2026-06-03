@@ -1,2 +1,8 @@
-# Root BUILD file — intentionally empty.
-# Each app lives under apps/. See README.md for the build commands.
+load("@gazelle//:def.bzl", "gazelle")
+
+# gazelle:prefix github.com/suhalvemu/bazel-cache-rbe-examples
+#
+# Run `bazel run //:gazelle` to auto-generate/update Go BUILD files.
+# Run `bazel run //:gazelle -- -mode=diff` to preview changes without applying them.
+# Gazelle only manages Go rules; cc_library, py_library etc. are left untouched.
+gazelle(name = "gazelle")

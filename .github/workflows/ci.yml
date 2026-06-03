@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    name: Build & Test (all targets)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Bazel
+        uses: bazel-contrib/setup-bazel@0.8.5
+        with:
+          bazelisk-cache: true        # cache the Bazelisk download
+          disk-cache: ${{ github.workflow }}  # per-workflow Bazel disk cache
+          repository-cache: true      # cache external repos (rules_go, etc.)
+
+      - name: Build all targets
+        run: bazel build //... --config=buildbuddy-cache
+        env:
+          BUILDBUDDY_API_KEY: ${{ secrets.BUILDBUDDY_API_KEY }}
+
+      - name: Test all targets
+        run: bazel test //... --config=buildbuddy-cache
+        env:
+          BUILDBUDDY_API_KEY: ${{ secrets.BUILDBUDDY_API_KEY }}
+
+  affected-targets:
+    name: Test affected targets (PRs only)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history needed for git diff
+
+      - name: Set up Bazel
+        uses: bazel-contrib/setup-bazel@0.8.5
+        with:
+          bazelisk-cache: true
+          disk-cache: ${{ github.workflow }}-affected
+          repository-cache: true
+
+      - name: Find changed Bazel packages
+        id: changed
+        run: |
+          # Get packages touched by this PR
+          CHANGED_PKGS=$(git diff --name-only origin/${{ github.base_ref }}...HEAD \
+            | grep -v '^docs/' \
+            | xargs -I{} dirname {} \
+            | sort -u \
+            | sed 's|^|//|; s|$|:all|' \
+            | tr '\n' ' ')
+          echo "packages=${CHANGED_PKGS}" >> $GITHUB_OUTPUT
+          echo "Changed packages: ${CHANGED_PKGS}"
+
+      - name: Test affected targets
+        if: steps.changed.outputs.packages != ''
+        run: bazel test ${{ steps.changed.outputs.packages }} --config=buildbuddy-cache
+        env:
+          BUILDBUDDY_API_KEY: ${{ secrets.BUILDBUDDY_API_KEY }}

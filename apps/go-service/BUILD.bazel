@@ -1,13 +1,25 @@
-load("@rules_go//go:def.bzl", "go_binary", "go_test")
+load("@rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
+
+# go_test must embed a go_library, not a go_binary.
+# Split the package into library + binary wrapper — the canonical rules_go pattern.
+go_library(
+    name = "go-service-lib",
+    srcs = ["main.go"],
+    importpath = "github.com/suhalvemu/bazel-cache-rbe-examples/apps/go-service",
+    visibility = ["//visibility:private"],
+)
 
 go_binary(
     name = "go-service",
-    srcs = ["main.go"],
+    embed = [":go-service-lib"],
+    # x_defs injects values into Go variables at link time (requires --stamp).
+    # STABLE_GIT_COMMIT comes from stamp/workspace_status.sh.
+    x_defs = {"main.version": "{STABLE_GIT_COMMIT}"},
     visibility = ["//visibility:public"],
 )
 
 go_test(
     name = "go-service-test",
     srcs = ["main_test.go"],
-    embed = [":go-service"],
+    embed = [":go-service-lib"],
 )

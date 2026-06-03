@@ -1,0 +1,4 @@
+# Local disk cache — persists across `bazel clean`, survives restarts.
+# Unlike Bazel's in-memory analysis cache, disk cache survives server restarts.
+# Shared across all workspaces on the machine — useful for multiple repos.
+build --disk_cache=~/.cache/bazel-disk-cache

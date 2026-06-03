@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package greeter;
+
+option go_package = "github.com/suhalvemu/bazel-cache-rbe-examples/proto;proto";
+option java_package = "com.example.proto";
+option java_outer_classname = "GreeterProto";
+
+message GreetRequest {
+  string name = 1;
+}
+
+message GreetResponse {
+  string message = 1;
+}
+
+service GreeterService {
+  rpc SayHello(GreetRequest) returns (GreetResponse);
+}

@@ -1,0 +1,38 @@
+version: "3.8"
+
+# Minimal Buildbarn cluster: scheduler + 1 worker + storage.
+# Production deployments add multiple workers and separate storage backends.
+services:
+  storage:
+    image: buildbarn/bb-storage:latest
+    ports:
+      - "8981:8981"   # gRPC for CAS + AC
+    volumes:
+      - bb-storage:/var/lib/bb-storage
+
+  scheduler:
+    image: buildbarn/bb-scheduler:latest
+    ports:
+      - "8982:8982"   # gRPC for scheduler
+    depends_on:
+      - storage
+
+  worker:
+    image: buildbarn/bb-worker:latest
+    privileged: true   # required to run build actions in containers
+    depends_on:
+      - scheduler
+      - storage
+    environment:
+      - BB_SCHEDULER_ADDRESS=scheduler:8982
+      - BB_STORAGE_ADDRESS=storage:8981
+
+  frontend:
+    image: buildbarn/bb-browser:latest
+    ports:
+      - "7984:7984"   # Web UI for inspecting builds
+    depends_on:
+      - storage
+
+volumes:
+  bb-storage:

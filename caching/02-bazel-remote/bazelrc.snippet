@@ -1,0 +1,6 @@
+# Self-hosted bazel-remote cache (see docker-compose.yml).
+# Use gRPC (port 9092) — faster than HTTP for large artifacts.
+# --remote_upload_local_results=true populates the shared cache from local builds.
+# Default is false — without it, your builds don't contribute to the cache.
+build:bazel-remote --remote_cache=grpc://localhost:9092
+build:bazel-remote --remote_upload_local_results=true

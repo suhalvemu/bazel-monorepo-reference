@@ -7,6 +7,10 @@ build --announce_rc
 # Prefix "/" causes symlink creation to fail silently — workspace stays clean
 build --symlink_prefix=/
 
+# Use remote JDK 21 — avoids dependency on a locally installed JDK
+build --java_runtime_version=remotejdk_21
+build --tool_java_runtime_version=remotejdk_21
+
 # --- Test flags ---
 test --test_output=errors
 
@@ -14,24 +18,54 @@ test --test_output=errors
 # user.bazelrc holds secrets like API keys — never commit it
 try-import %workspace%/user.bazelrc
 
-# --- Cache profiles (import one via --config) ---
+# --- Cache profiles (use with --config=<name>) ---
 
 # Local disk cache (~/.cache/bazel-disk-cache)
+# Persists across `bazel clean` and server restarts.
 build:local-cache --disk_cache=~/.cache/bazel-disk-cache
 
-# Buildbuddy remote cache (free tier) — API key goes in user.bazelrc (gitignored)
+# Self-hosted bazel-remote (see caching/02-bazel-remote/docker-compose.yml)
+build:bazel-remote --remote_cache=grpc://localhost:9092
+build:bazel-remote --remote_upload_local_results=true
+
+# BuildBuddy remote cache (free tier) — API key goes in user.bazelrc (gitignored)
 build:buildbuddy-cache --remote_cache=grpcs://remote.buildbuddy.io
 build:buildbuddy-cache --remote_upload_local_results=true
 
-# Buildbuddy RBE — set BUILDBUDDY_API_KEY in env
+# BuildBuddy RBE — executes actions on remote workers, not just caches them
 build:buildbuddy-rbe --config=buildbuddy-cache
 build:buildbuddy-rbe --remote_executor=grpcs://remote.buildbuddy.io
 build:buildbuddy-rbe --jobs=50
+build:buildbuddy-rbe --remote_default_exec_properties=OSFamily=linux
 
-# Buildbarn (self-hosted, see rbe/02-buildbarn)
+# Buildbarn self-hosted RBE (see rbe/02-buildbarn/docker-compose.yml)
 build:buildbarn --remote_cache=grpc://localhost:8980
 build:buildbarn --remote_executor=grpc://localhost:8980
+build:buildbarn --remote_upload_local_results=true
 
-# GCS remote cache — set GCS_BUCKET in env
+# GCS remote cache — set GCS_BUCKET env var, run `gcloud auth application-default login`
 build:gcs --remote_cache=https://storage.googleapis.com/${GCS_BUCKET}
 build:gcs --google_default_credentials
+build:gcs --remote_upload_local_results=true
+
+# --- Build stamping ---
+# Embeds STABLE_GIT_COMMIT into go_binary targets that declare x_defs.
+# Stable values bust the cache; volatile values (timestamps) do not.
+build:stamp --workspace_status_command=stamp/workspace_status.sh
+build:stamp --stamp
+
+# --- Cross-compilation ---
+# rules_go derives GOOS/GOARCH automatically from platform constraint values.
+# C/C++ cross-compilation requires additional toolchain setup (toolchains_llvm etc.)
+build:linux --platforms=//platforms:linux_amd64
+build:linux-arm --platforms=//platforms:linux_arm64
+
+# TypeScript: skip type-checking of external .d.ts files
+# Required for aspect_rules_ts 3.x to resolve its select() configuration
+build --@aspect_rules_ts//ts:skipLibCheck=always
+build --@aspect_rules_ts//ts:default_to_tsc_transpiler=True
+
+# --- Test filtering ---
+# Run only smoke-tagged tests: bazel test //... --config=smoke
+test:smoke --test_tag_filters=smoke
+test:parallel --jobs=8

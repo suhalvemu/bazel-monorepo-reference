@@ -1,0 +1,29 @@
+load("//bazel:rules.bzl", "generate_header")
+
+# filegroup — collects multiple files under one label.
+# Other targets reference this via the `data` attribute to get files at runtime.
+filegroup(
+    name = "build_scripts",
+    srcs = glob(["*.sh"], allow_empty = True),
+    visibility = ["//visibility:public"],
+)
+
+# genrule — runs an arbitrary shell command to produce output files.
+# $(location label) resolves a label to its file path in the command.
+# $@ is a shorthand for the single output file.
+# $< is a shorthand for the first input file (srcs[0]).
+genrule(
+    name = "gen_build_info",
+    outs = ["build_info.txt"],
+    cmd = "echo 'Built by Bazel' > $@",
+    visibility = ["//visibility:public"],
+)
+
+# generate_header uses our custom rule from //bazel:rules.bzl.
+generate_header(
+    name = "project_header",
+    out = "project.h",
+    project_name = "bazel-cache-rbe-examples",
+    version = "1.0.0",
+    visibility = ["//visibility:public"],
+)

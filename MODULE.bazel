@@ -3,14 +3,55 @@ module(
     version = "0.1.0",
 )
 
+# ── Core language rules ────────────────────────────────────────────────────────
 bazel_dep(name = "rules_go", version = "0.53.0")
 bazel_dep(name = "gazelle", version = "0.42.0")
 bazel_dep(name = "rules_python", version = "1.4.1")
-bazel_dep(name = "rules_java", version = "8.6.2")
+bazel_dep(name = "rules_java", version = "8.11.0")
 bazel_dep(name = "rules_cc", version = "0.1.1")
 
+# ── C++ testing ───────────────────────────────────────────────────────────────
+bazel_dep(name = "googletest", version = "1.14.0.bcr.1")
+
+# rules_jvm_external is intentionally omitted.
+# It requires a local JRE to run coursier during workspace setup — a hermetic violation.
+# Java tests here use only rules_java built-ins (no external test framework).
+# For production Maven dep management, see: https://github.com/bazelbuild/rules_jvm_external
+
+# ── TypeScript ────────────────────────────────────────────────────────────────
+bazel_dep(name = "aspect_rules_js", version = "2.1.0")
+bazel_dep(name = "aspect_rules_ts", version = "3.3.1")
+bazel_dep(name = "rules_nodejs", version = "6.3.2")
+
+# ── Protobuf / gRPC ───────────────────────────────────────────────────────────
+bazel_dep(name = "protobuf", version = "29.0")
+bazel_dep(name = "rules_proto", version = "7.0.2")
+
+# ── Go SDK ────────────────────────────────────────────────────────────────────
 go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
 go_sdk.download(version = "1.23.0")
 
+# ── Python toolchain ──────────────────────────────────────────────────────────
 python = use_extension("@rules_python//python/extensions:python.bzl", "python")
 python.toolchain(python_version = "3.12")
+
+# ── npm / pnpm (TypeScript) ───────────────────────────────────────────────────
+npm = use_extension("@aspect_rules_js//npm:extensions.bzl", "npm", dev_dependency = True)
+npm.npm_translate_lock(
+    name = "npm",
+    pnpm_lock = "//apps/ts-app:pnpm-lock.yaml",
+)
+use_repo(npm, "npm")
+
+# Downloads the TypeScript compiler version declared in package.json
+rules_ts_ext = use_extension(
+    "@aspect_rules_ts//ts:extensions.bzl",
+    "ext",
+    dev_dependency = True,
+)
+rules_ts_ext.deps()
+use_repo(rules_ts_ext, "npm_typescript")
+
+# ── Gazelle Go deps (reads go.mod) ────────────────────────────────────────────
+go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
+go_deps.from_file(go_mod = "//:go.mod")

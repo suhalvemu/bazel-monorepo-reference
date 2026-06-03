@@ -1,0 +1,26 @@
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+
+cc_library(
+    name = "greeter",
+    srcs = ["greeter.cc"],
+    hdrs = ["greeter.h"],
+    visibility = ["//visibility:public"],
+)
+
+# shard_count splits the test across N independent shards in CI.
+# tags lets you filter: bazel test --test_tag_filters=smoke
+# size="small" declares expected resource usage (CPU/memory), not wall time.
+cc_test(
+    name = "greeter_test",
+    srcs = ["greeter_test.cc"],
+    size = "small",
+    shard_count = 2,
+    tags = [
+        "smoke",
+        "unit",
+    ],
+    deps = [
+        ":greeter",
+        "@googletest//:gtest_main",
+    ],
+)

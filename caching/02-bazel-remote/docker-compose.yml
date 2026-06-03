@@ -1,0 +1,18 @@
+version: "3.8"
+
+services:
+  bazel-remote:
+    image: buchgr/bazel-remote-cache:latest
+    ports:
+      - "9090:9090"   # HTTP cache endpoint
+      - "9092:9092"   # gRPC cache endpoint (preferred)
+    volumes:
+      - bazel-remote-data:/data
+    command:
+      - --dir=/data
+      - --max_size=10       # max cache size in GiB
+      - --grpc_address=:9092
+      - --http_address=:9090
+
+volumes:
+  bazel-remote-data:

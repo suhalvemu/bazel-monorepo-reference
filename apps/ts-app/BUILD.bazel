@@ -1,0 +1,26 @@
+load("@aspect_rules_ts//ts:defs.bzl", "ts_project")
+load("@aspect_rules_js//js:defs.bzl", "js_test")
+
+# aspect_rules_ts 3.x requires explicit transpiler selection.
+# tsc = TypeScript compiler (hermetic — downloaded via npm extension in MODULE.bazel).
+ts_project(
+    name = "greeter_ts",
+    srcs = ["src/greeter.ts"],
+    declaration = True,
+    tsconfig = "tsconfig.json",
+    visibility = ["//visibility:public"],
+)
+
+ts_project(
+    name = "greeter_test_ts",
+    srcs = ["src/greeter.test.ts"],
+    declaration = True,
+    tsconfig = "tsconfig.json",
+    deps = [":greeter_ts"],
+)
+
+js_test(
+    name = "greeter_test",
+    data = [":greeter_test_ts"],
+    entry_point = "src/greeter.test.js",
+)

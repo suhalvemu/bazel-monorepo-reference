@@ -1,0 +1,15 @@
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+
+cc_library(
+    name = "greet",
+    srcs = ["greet.c"],
+    hdrs = ["greet.h"],
+    visibility = ["//visibility:public"],
+)
+
+cc_test(
+    name = "greet_test",
+    srcs = ["greet_test.c"],
+    size = "small",
+    deps = [":greet"],
+)

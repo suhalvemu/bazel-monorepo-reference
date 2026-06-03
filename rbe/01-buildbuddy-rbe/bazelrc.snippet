@@ -1,0 +1,8 @@
+# BuildBuddy RBE — remote execution + caching.
+# Inherits buildbuddy-cache config (same endpoint handles both).
+# --jobs=50 allows up to 50 concurrent remote actions (free tier allows ~10).
+# --remote_default_exec_properties tells the scheduler what OS to run workers on.
+build:buildbuddy-rbe --config=buildbuddy-cache
+build:buildbuddy-rbe --remote_executor=grpcs://remote.buildbuddy.io
+build:buildbuddy-rbe --jobs=50
+build:buildbuddy-rbe --remote_default_exec_properties=OSFamily=linux

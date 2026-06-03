@@ -1,0 +1,8 @@
+# EngFlow managed RBE (commercial).
+# Replace <your-cluster> with your EngFlow cluster hostname.
+# TLS certificate and API key are provided by EngFlow upon account creation.
+build:engflow --remote_cache=grpcs://<your-cluster>.engflow.com
+build:engflow --remote_executor=grpcs://<your-cluster>.engflow.com
+build:engflow --tls_client_certificate=engflow.crt
+build:engflow --tls_client_key=engflow.key
+build:engflow --jobs=100

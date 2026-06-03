@@ -1,0 +1,45 @@
+# Platform definitions for cross-compilation.
+#
+# Usage:
+#   bazel build //apps/go-service --platforms=//platforms:linux_amd64
+#
+# Go cross-compilation works out of the box with rules_go — it derives
+# GOOS and GOARCH from the platform constraint values.
+#
+# C/C++ cross-compilation requires a cross-compiler toolchain (e.g.
+# toolchains_llvm or hermetic_cc_toolchain). The platform targets here
+# are the first step; toolchain registration is a separate concern.
+
+package(default_visibility = ["//visibility:public"])
+
+platform(
+    name = "linux_amd64",
+    constraint_values = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+)
+
+platform(
+    name = "linux_arm64",
+    constraint_values = [
+        "@platforms//os:linux",
+        "@platforms//cpu:arm64",
+    ],
+)
+
+platform(
+    name = "darwin_arm64",
+    constraint_values = [
+        "@platforms//os:macos",
+        "@platforms//cpu:arm64",
+    ],
+)
+
+platform(
+    name = "darwin_amd64",
+    constraint_values = [
+        "@platforms//os:macos",
+        "@platforms//cpu:x86_64",
+    ],
+)

@@ -1,0 +1,5 @@
+# Self-hosted Buildbarn RBE (see docker-compose.yml).
+# Port 8980 is the default Buildbarn frontend gRPC port.
+build:buildbarn --remote_cache=grpc://localhost:8980
+build:buildbarn --remote_executor=grpc://localhost:8980
+build:buildbarn --remote_upload_local_results=true

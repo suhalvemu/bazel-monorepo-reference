@@ -1,0 +1,5 @@
+# BuildBuddy remote cache (free tier).
+# API key goes in user.bazelrc (gitignored) — never commit it.
+# user.bazelrc: build --remote_header=x-buildbuddy-api-key=YOUR_KEY
+build:buildbuddy-cache --remote_cache=grpcs://remote.buildbuddy.io
+build:buildbuddy-cache --remote_upload_local_results=true

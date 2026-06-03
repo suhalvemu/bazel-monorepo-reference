@@ -1,0 +1,10 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+# visibility = ["//apps:__subpackages__"] means only targets under apps/ can depend on this.
+# This enforces the monorepo rule: apps consume libs, libs never depend on apps.
+cc_library(
+    name = "version",
+    srcs = ["version.cc"],
+    hdrs = ["version.h"],
+    visibility = ["//apps:__subpackages__"],
+)
